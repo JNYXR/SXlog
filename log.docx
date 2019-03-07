@@ -1,0 +1,289 @@
+2019.02.18
+在Linux系统中，每个设备都被当成一个文件来看待。几乎所有的硬件设备文件都在/dev这个目录。
+IDE硬盘	/dev/hd[a-d]
+SCSI/SATA/USB硬盘/U盘	/dev/sd[a-p]
+软驱	/dev/fd[0-1]
+打印机	25针：/dev/lp[0-2]
+USB：/dev/usb/lp[0-15]
+鼠标	USB：/dev/usb/mouse[0-15]
+PS2：/dev/psaux
+当前鼠标	/dev/mouse
+
+linux的bashrc文件在/home目录下，但是是一个隐藏文件，在文件管理器里面按Ctrl+H即可显示(显示为.bashrc，前面小点儿表示隐藏文件）。也可以直接利用terminal直接打开。
+Wine：在linux环境下运行windows应用的工具
+安装gitk、qgit、repo、Source Insight、bcompare
+Bcompare安装教程:
+http://www.scootersoftware.com/download.php?zz=kb_linux_install
+2019.02.19
+拉代码遇到的问题：
+ubuntu@ubuntu:/media/ubuntu/disk/test$ repo init --no-repo-verify -u ssh://SX10101084@10.100.30.60:29418/manifest -m BD1SW/QCOM/Lenovo_sm7150_jd2020_bsp.xml && repo sync -j8 && repo start jd2020_bsp --all
+fatal: Cannot get https://gerrit.googlesource.com/git-repo/clone.bundle
+fatal: error [Errno 101] Network is unreachable
+fatal: cloning the git-repo repository failed, will remove '.repo/rep
+解决方法：检查repo里面的代码中REPO_URL对应的是不是codeaurora。这里出现的问题是REPO_URL对应的是google，所以会报网络错误。
+编译代码：用mk脚本文件。（mk在LINUX/android/目录下）
+./mk即可列出mk的用法和参数
+编译指令：./mk -p zql1828 -s -v userdebug -m new -o all (先清除out目录，全编)
+了解Gerrit网站
+Repo的使用：repo init (下载repo并克隆manifest)
+			repo sync(下载代码)
+			repo start(创建并切换分支)
+			repo checkout(切换分支)
+			repo branches(查看分支)
+			repo diff(查看工作区文件差异)
+			repo stage(把文件添加到index表中)
+			repo prune(删除已经合并分支)
+			repo abandon(删除指定分支)
+			repo status(查看文件状态)
+2019.02.20
+拉取ZQL1898和ZAL1670项目代码
+了解屏下指纹原理
+任何一个计算机系统的运转都是系统中软硬件共同努力的结果，没有硬件的软件是空中
+楼阁，而没有软件的硬件则只是一堆废铁。
+设备驱动充当了硬件和应用软件之间的纽带。
+无操作系统：功能单一，控制简单，并不需要多任务调度、文件系统、内存管理等复杂功能。一个无限循环中夹杂着对设备中断的检测或者对设备的轮询是这种系统中软件的典型架构。
+每一种设备驱动都会定义为一个软件模块，包含 .h 文件和 .c 文件，前者定义该设备驱动的数据结构并声明外部函数，后者进行驱动的具体实现。其他模块想要使用这个设备的时候，只需要包含设备驱动的头文件 serial.h，然后调用其中的外部接口函数。
+字符设备指那些必须以串行顺序依次进行访问的设备，如触摸屏、磁带驱动器、鼠标等。
+块设备可以按任意顺序进行访问，以块为单位进行操作，如硬盘、 eMMC 等。
+Intel公司的中央处理器、ARM的ARM7、MIPS公司的MIPS处理器采用了冯• 诺依曼结构；而AVR、ARM9、ARM10、ARM11以及Cortex A系列等则采用了哈佛结构。
+ 
+ 
+
+			 
+使用示波器时，根据奈奎斯特定理，采样速率至少高于信号高频分量的两倍才不会发生混迭。
+Android 采 用 Linux 内 核， 但 是 在 内 核 里 加 入 了 一 系 列 补 丁， 如 Binder、 ashmem、wakelock、 low memory killer、 RAM_CONSOLE 等。		
+总线类型中的 match() 函数用来匹配设备和驱动，当匹配操作完成之后就会执行驱动程序中的probe() 函数。
+Linux内核的组成。Linux 内核主要由进程调度（SCHED）、 内存管理（MM）、虚拟文件系统（VFS）、网络接口（NET）和进程间通信（IPC） 5个子系统组成。
+在 Linux 内核中，使用 task_struct 结构体来描述进程，该结构体中包含描述该进程内存
+资源、文件系统资源、文件资源、 tty 资源、信号处理等的指针。
+内存管理的主要作用是控制多个进程安全地共享主内存区域。
+添加新USB设备：USB不识别是因为端口未添加到文件中导致的，需要在/etc/udev/rules.d路径下添加一个70-android.rules文件，在文件中更新 新设备端口。
+
+使用命令：sudo vim /etc/udev/rules.d/70-android.rules
+使用lsusb命令查看usb设备的ID，如Bus 003 Device 005: ID 05c6:90b8 Qualcomm, Inc.
+则sudo vim /etc/udev/rules.d/70-android.rules打开后修改如下：
+SUBSYSTEM=="usb",ATTRS{idVendor}=="05c6",ATTRS{idProduct}=="90b8",MODE=="0666"
+
+创建adb_usb.ini(若没有）,写入id
+sudo gedit ~/.android/adb_usb.ini
+添加端口号，如0x05c6,
+adb kill-server
+adb start-server
+之后adb devices 即可查看设备
+
+2019.02.21
+熟悉MTK烧录工具
+熟悉makefile（定义Linux内核的编译规则）语法
+Kconfig（内核配置脚本文件）：
+	“config ”关键字定义新的配置选项，之后的几行代码定义了该配置选项的属性。配
+置选项的属性包括类型、数据范围、输入提示、依赖关系、选择关系及帮助信息、默认值等。
+dts makefile Kconfig
+Kconfig配置项：三态：Y（可编译入内核），N（不会编译），M（生成.ko模块）
+在 Linux 内核中增加程序需要完成以下 3 项工作。
+● 将编写的源代码复制到 Linux 内核源代码的相应目录中。
+● 在目录的 Kconfig 文件中增加关于新源代码对应项目的编译配置选项。
+● 在目录的 Makefile 文件中增加对新源代码的编译条目。
+目前嵌入式Linux领域最著名的bootloader是U-boot。其 代 码 仓 库 位 于 http://git.denx.de/u-boot.git/。
+ 
+了解Linux下的C编程特点。
+DTS：
+ .dts是一种ascll文本格式的设备树描述，一个.dts对应一个ARM设备，一般放在arch/arm/boot/dts中，Linux内核为了简化，把Soc公用的部分或者多个设备共同的部分一般提炼为.dtsi，类似于C语言的头文件，.dts里就包括.dtsi。
+dts设备描述的三个属性：	compatible,reg,interrupts
+DTC：将.dts编译为.dtb的工具。
+DTB：文件.dtb是..dts被DTC编译后的二进制格式的设备树描述，可由Linux内核解析，U-boot也可以识别.dtb。
+2019.02.22
+完成ZQL1898项目烧录。
+手机外设：
+I2C：LCM、camera、NFC、mATV（天线）、G sensor（重力传感器）、M sensor(磁力传感器（动作）)、ALS+PS sensor（光线和距离传感器，相机用）、Gyro sensor（陀螺仪）、barometer（气压计）
+Linux内核模块：
+模块加载函数：一般以__init标识声明
+例如： static int __init 函数名(void)
+{
+	/*初始化代码*/
+	}
+module_init(函数名);
+模块卸载函数：一般以__exit标识声明。
+单编后的烧录操作：adb reboot bootloader 
+fastboot flash boot out/target/product/sdm710/boot.img
+fastboot flash dtbo out/target/product/sdm710/dtbo.img
+fastboot reboot
+MTK烧录：fastboot存储在out/host/linux-X86/bin
+     Fastboot指令如下：./fastboot boot ../../../target/product/wasp/boot.img
+2019.02.25
+CTP工作原理：交叉位置会形成对应的节点耦合电容，通过检测各节点电容的变化来计算出坐标的位置，触摸屏各节点容值(模拟信号)经触摸IC检测电路采集及转换得到对应节点的原始值，正常没有手指触摸时，认为基准等于当前值,此时差值为零；当手指触摸在屏体的时候，对应的位置电容↓(rawdata↓)，差值↑。差值是固件用来计算坐标的数据。
+CTP Bringup：、
+1.加入驱动文件
+	2.改上一级目录的Kconfig和makefile
+	3修改config
+	4.修改dtsi		
+抓取log：1.adb reboot
+开机后：
+		2.adb root
+		3.	adb shell cat dev/kmsg > kmsg.log
+		4.	gedit kmsg.log
+字符设备驱动：在Linux系统内核中，使用cdev结构体描述一个字符设备驱动。
+file_operations结构体：字符设备驱动程序设计的主体内容。
+字符设备驱动的组成：
+1.	模块加载和卸载函数
+2.	File_opretions结构体中的成员函数
+
+
+2019.02.26
+设备树总结：
+ 
+Device Tree由一系列被命名的结点（node）和属性（property）组成，而结点本身可包含子结点。所谓属性，其实就是成对出现的name和value。Device Tree Compiler会对DTS的node进行合并，最终生成的DTB中只有一个 root  node。
+compatible属性用户驱动和设备的绑定，compatible 属性是一个字符串的列表，列表中的第一个字符串表征了结点代表的确切设备，形式为"<manufacturer>,<model>"，其后的字符串表征可兼容的其他设备。可以说前面的是特指，后面的则涵盖更广的范围。
+如：compatible = "arm,vexpress-flash", "cfi-flash"; compatible属性的第2个字符串"cfi-flash"明显比第1个字符串"arm,vexpress-flash"涵盖的范围更广。
+reg的组织形式为reg = <address1 length1 [address2 length2][address3 length3] ... >，其中的每一组addresslength表明了设备使用的一个地址范围。address为1个或多个32位的整型（即cell），而length则为cell的列表或者为空（若#size-cells = 0）。address和length字段是可变长的，父结点的#address-cells和#size-cells分别决定了子结点的reg属性的address和length字段的长度。
+ interrupts – 用到了中断的设备结点透过它指定中断号、触发方法等，具体这个属性含有多少个cell，由它依附的中断控制器结点的#interrupt-cells属性决定。而具体每个cell又是什么含义，一般由驱动的实现决定，而且也会在Device Tree的binding文档中说明。
+interrupt-controller– 这个属性为空，中断控制器应该加上此属性表明自己的身份；
+interrupt-parent– 设备结点透过它来指定它所依附的中断控制器的phandle，当结点没有指定interrupt-parent时，则从父级结点继承。
+一个含有compatible属性的节点就是一个设备。包含一组设备节点的父节点即为总线。
+高通Tp-bringup匹配dtsi：首先确定tp挂载的总线编号，抓取log中的字符串类似于
+“Qualcomm Technologies, Inc. SDM670“，然后在qcom（高通的意思）目录下
+grep -ir "Qualcomm Technologies, Inc .SDM670" .
+然后确定含有	model = "Qualcomm Technologies, Inc. SDM670"; 字符串的xxx.dtsi目录。
+在xxx.dtsi目录下或者其包含的目录下找到对应i2c编号的节点，这是会出现定义的节点和引用的节点，这里需要在该引用节点下添加对应的dtsi代码，并做相关配置，
+主要是i2c地址，电源口，和两个gpio口的配置。引脚相关的先看原理图，然后在dtsi里面找相关定义的名称，再做引用。
+MTK Tp-bringup匹配dtsi：对应的dts文件在boot/mediate目录下，模块的dtsi单开一个dtsi文件，引用相应的i2c地址，如&i2c0，后添加tp设备。例如：
+&i2c0 {
+	#address-cells = <1>;（1个cell表示地址）
+	#size-cells = <0>;(0个cell表示所占长度)
+
+	focal@38 {                      //若供应商没给，这部分需要自己编写
+		compatible = "mediatek,cap_touch_focal";
+		status = "ok";
+		reg =<0x38>;
+	};
+	goodix@14 {
+		compatible = "mediatek,goodix_touch";
+		status = "ok";
+		reg =<0x14>;
+	};
+};（添加了两款tp）
+在项目的dts文件中，如wasp.dts中include刚刚创建的tp的dtsi文件。然后继续在wasp.dts文件中找touch相关的gpio配置，分辨率等…
+
+Linux设备驱动中的并发控制：
+并发指的是多个执行单元同时、并行被执行，而并发的执行单元对共享资源（硬件资源和软件上的全局变量、静态变量等）的访问容易导致竞态。
+解决竞态问题的途径是保证对共享资源的互斥访问，所谓互斥访问是指一个执行单元在访问共享资源的时候，其他的执行单元被禁止访问。访问共享资源的代码区域称为临界区，临界区需要被以某种互斥机制加以保护。中断屏蔽，原子操作，自旋锁，信号量，互斥体等是Linux设备驱动中可采用的互斥途径。
+编译乱序问题：由于编译器的优化机制，例：
+	e=d[4095];
+	b=a;
+	c=a;
+编译顺序可能是先b=a,c=a,再e=d[4095]；此时可以加入编译屏障：
+	e=d[4095];
+	barrier();
+	b=a;
+	c=a;
+此时编译并没有乱序。
+中断屏蔽：相关关键词：local_irq_disable()、local_irp_enable()
+原子操作：相关关键词：ldrex、strex、atomic，
+设置位：void set_bit(nr,void *addr)将addr地址的第nr位写为1
+清除位：void clear_bit(nr,void *addr) 将addr地址的第nr位写为0
+自旋锁：相关关键词：spin_lock
+信号量：P(S)：①如果信号量S的值大于零，该进程继续执行
+②如果S的值为零，将该进程置为等待状态，排入信号量的等待队列，直到V操作唤醒之。
+ 相关关键词：sem
+互斥体：相关关键词：mutex
+完成量:用于一个执行单元等待另一执行单元执行完某事。关键词：completion/complete
+
+Linux2.6.35之后就取消了中断的嵌套。
+
+
+
+2019.02.27
+dtsi配置问题：
+1.	供电相关的配置：在驱动程序里面查找power相关，再找regulator解析的字段，将此字段添加在-power前面，power后面的地址需要看硬件的供电线路在确定地址。
+2.	Gpio相关的配置：<>里面的第一个元素是一个引用，应该是gpio中断控制器相关，这个地址可参考同一个dtsi文件里面的其他地方，挨个尝试，第二个元素是gpio号，看资源配置表可得知。第三个元素是中断号，可参考本文件以上配置。
+3.	其他配置例如芯片的id和channel等由厂商提供
+Linux设备驱动中的阻塞与非阻塞I/O：
+阻塞操作是指在执行设备操作时，若不能获取资源，则挂起进程直到满足可操作的条件后再操作。而非阻塞操作的进程在不能进行设备操作时，并不挂起，要么放弃，要么不停的查询，直到可以进行操作为止。
+使用等待队列实现阻塞进程的唤醒。等待队列关键词：wait_queue。当多个等待队列、信号量、互斥锁等机制同时出现时，谨防死锁。在设备驱动的read和write等功能函数中
+使用非阻塞I/O的应用程序也可借助轮询函数来查询设备是否能立即被访问， 用户空间调用select（） 、 poll（） 或者epoll接口， 设备驱动提供poll（） 函数。
+Linux设备驱动中的异步通知与异步I/O：
+异步通知的意思是： 一旦设备就绪， 则主动通知应用程序， 这样应用程序根本就不需要查询设备状态， 这一点非常类似于硬件上“中断”的概念， 比较准确的称谓是“信号驱动的异步I/O”。信号是在软件层次上对中断机制的一种模拟， 在原理上， 一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。 信号是异步的， 一个进程不必通过任何操作来等待信号的到达， 事实上， 进程也不知道信号到底什么时候到达。
+阻塞I/O意味着一直等待设备可访问后再访问， 非阻塞I/O中使用poll（） 意味着查询设备是否可访问， 而异步通知则意味着设备通知用户自身可访问， 之后用户再进行I/O处理。 由此可见， 这几种I/O方式可以相互补充。
+异步通知关键词：fasync、signal
+在用户程序中， 为了捕获信号， 可以使用signal（） 函数来设置对应信号的处理函数。
+Linux异步i/o :关键词：aio（Asynchronous I/O）
+
+
+
+2019.02.28
+中断可分为内部中断和外部中断， 内部中断的中断源来自CPU内部（软件中断指令、 溢出、 除法错误等， 例如， 操作系统从用户态切换到内核态需借助CPU内部的软件中断） ， 外部中断的中断源来自CPU外部， 由外设提出请求。
+中断可分为可屏蔽中断与不可屏蔽中断（NMI） ， 可屏蔽中断可以通过设置中断控制器寄存器等方法被屏蔽， 屏蔽后， 该中断不再得到响应， 而不可屏蔽中断不能被屏蔽。
+中断可分为向量中断和非向量中断。 采用向量中断的CPU通常为不同的中断分配不同的中断号， 当检测到某中断号的中断到来后， 就自动跳转到与该中断号对应的地址执行。
+不同中断号的中断有不同的入口地址。 非向量中断的多个中断共享一个入口地址， 进入该入口地址后， 再通过软件判断中断标志来识别具体是哪个中断。 也就是说， 向量中断由硬件提供中断服务程序入口地址，非向量中断由软件提供中断服务程序入口地址。
+	为了在中断执行时间尽量短和中断处理需完成的工作尽量大之间找到一个平衡点， Linux将中断处理程序分解为两个半部： 顶半部（Top Half） 和底半部（BottomHalf）。
+	中断编程包括：申请和释放中断（request_irq（） 和free_irq（） 函数）。使能和屏蔽中断（disable_irq（）和enable_irq（））。
+	Linux实现底半部的机制主要有tasklet、 工作队列、 软中断和线程化irq。
+在Linux内核中， timer_list结构体的一个实例对应一个定时器， 如下：
+ 
+当定时器期满后， 其中第10行的function（） 成员将被执行， 而第11行的data成员则是传入其中的参数， 第7行的expires则是定时器到期的时间（jiffies） 。
+我们可以通过如下函数调度一个delayed_work在指定的延时后执行：
+int schedule_delayed_work(struct delayed_work *work, unsigned long delay);
+
+
+
+
+
+
+
+
+2018.03.01
+内存地址可以直接由C语言指针操作
+绝对地址0xFFFF0（对应的C语言指针是0xF000FFF0， 0xF000为段地
+址， 0xFFF0为段内偏移）
+ 
+内存管理单元（MMU） ， 该单元辅助操作系统进行内存管理， 提供虚拟地址和物理地址的映射、 内存访问权限保护和Cache缓存控制等硬件支持。
+ 
+在用户空间中动态申请内存的函数为malloc（） ， 这个函数在各种操作系统上的使用都是一致的，malloc（） 申请的内存的释放函数为free（） 。 对于Linux而言， C库的malloc（） 函数一般通过brk（） 和mmap（） 两个系统调用从内核申请内存。
+在Linux内核空间中申请内存涉及的函数主要包括kmalloc（） 、 __get_free_pages（） 和vmalloc（）等。
+使用kmalloc（） 申请的内存应使用kfree（） 释放， 这个函数的用法和用户空间的free（） 类似。
+DMA是一种无须CPU的参与就可以让外设与系统内存之间进行双向数据传输的硬件机制。 使用DMA可以使系统CPU从实际的I/O数据传输过程中摆脱出来.
+Tp驱动程序:
+	__init驱动加载函数，包括添加i2c设备。
+	__exit驱动卸载函数，卸载i2c设备。
+	Probe函数：完成tp相关的一系列初始化，添加i2c_adapter的数据结构。
+而对于所有的输入事件， 内核都用统一的数据结构来描述， 这个数据结构是input_event.
+在probe函数注册完设备之后,输入设备的核心工作只剩下在按键、 触摸等人为动作发生时报告事件，中断触发报告事件。
+
+2019.03.04
+在实际产品中，当屏幕感应到手指的接触或者靠近，会产生一个外部中断给CPU，在中断中，一般中断下半部，通过I2C总线，从TP的IC中读取相关的信息，经过一定的数据处理，上报X,Y坐标值。
+Kconfig ---> （每个源码目录下）提供选项
+.config ---> （源码顶层目录下）保存选择结果
+Makefile---> （每个源码目录下）根据.config中的内容来告知编译系统如何编译
+TP ESD 防护机制：是指在驱动中增加一个线程，来查询IC 的工作状态，如果发现工作异常，则复位IC，主要用于较强ESD 条件下的避免TP 失效，您可以根据ESD 测试结果来决定是否打开该功能。
+Linux设备驱动软件架构：分层思想，
+I2c体系三个部分：i2c核心，i2c总线驱动，i2c设备驱动
+I2C总线驱动的代码， 我们可以控制I2C适配器以主控方式产生开始位、 停止位、 读写周期， 以及以从设备方式被读写、 产生ACK等。
+I2C核心是I2C总线驱动和I2C设备驱动的中间枢纽， 它以通用的、 与平台无关的接口实现了I2C中设备与适配器的沟通。 I2C总线驱动填充i2c_adapter和i2c_algorithm结构体， I2C设备驱动填充i2c_driver结构体并实现其本身所对应设备类型的驱动。
+尽管I2C适配器给别人提供了总线， 它自己也被认为是接在platform总线上的一个客户。Linux的总线、 设备和驱动模型实际上是一个树形结构， 每个节点虽然可能成为别人的
+总线控制器， 但是自己也被认为是从上一级总线枚举出来的。
+
+2019.03.07
+	CMOS电路中的功耗与电压的平方成正比、 与频率成正比（P∝fV2） ， 因此降低电压和频率可降低功耗。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                               
+
