@@ -263,6 +263,250 @@ I2C核心是I2C总线驱动和I2C设备驱动的中间枢纽， 它以通用的�
 
 2019.03.07
 	CMOS电路中的功耗与电压的平方成正比、 与频率成正比（P∝fV2） ， 因此降低电压和频率可降低功耗。
+I2C、 SPI、 USB控制器虽然给别人提供了总线， 但是其实自己也是由它自身依附的
+总线枚举出来的。 比如， 对于SoC而言， 这些控制器一般是直接集成在芯片内部， 通过内存访问指令来访问的， 因此它们自身是通过platform_driver、 platform_device这种模型枚举进来的。
+	cat dev/kmsg   实时抓取log
+	cat dev/kmsg | grep "NVT-ts" 只打相关log
+	adb shell dmesg > sdcard/dmesg.txt 可以把之前缓存的也打出来 
+adb pull sdcard/kmsg_1.txt
+2019.03.15
+
+China unix: http://blog.chinaunix.net/
+http://blog.chinaunix.net/uid/31087949/year-201703-list-8.html
+
+datasheet https://www.alldatasheet.com/
+
+CSDN： https://blog.csdn.net
+
+半夏月  https://www.banxiayue.com
+
+kernel.org_bugzilla  https://bugzilla.kernel.org/show_bug.cgi?id=73241
+
+嵌入式Linux维基百科 http://wiki.100ask.org/Mainpage
+
+腾讯云 https://cloud.tencent.com/developer/devdocs
+
+IBM https://www.ibm.com/developerworks/cn/linux/
+
+https://www.linuxprobe.com/
+
+https://huataihuang.gitbooks.io/cloud-atlas/content/os/linux/
+
+2019.03.18
+调试加编译错误：
+#ifdef CONFIG_GTP_GESTURE_WAKEUP
+1213
+	printk("tpd_gesture_wakeup_yxr");
+	if (gesture_data.enabled) {
+	    printk("gesture_data.enabled_yxr");
+		ret = gtp_enter_doze();
+		gtp_irq_enable();
+		enable_irq_wake(touch_irq);
+	} else {
+#else
+12312412
+	{
+	printk("tpd-gesture_not_wakeup_yxr");
+#endif
+根据报错可知是否被定义。
+
+2019.03.19
+Git使用：查看提交记录，需进入msm4.19类似文件夹。git log或者gitk（版本管理）
+代码提交：
+  Git add  提交到缓存区
+  Git status .  检查
+  Git commit 写提交注释
+  Git push 提交
+查找节点：进入sys或者proc目录下
+ find –name “节点全称”
+2019.03.22
+创建PCOC节点：
+1.	在gesture_init函数里：
+	struct proc_dir_entry *proc_entry = NULL;
+2. 	proc_entry = proc_create(GESTURE_NODE, 0666, NULL, &gtp_fops);	
+	if (proc_entry == NULL) 
+		{		
+		printk("[fts]Couldn't create proc entry[GESTURE_NODE]!");		
+		return -1;	
+		} 
+	else {		
+		printk("[fts]Create proc entry[GESTURE_NODE] success!");	
+		}
+
+
+3. static const struct file_operations gtp_fops = {	
+		.owner = THIS_MODULE,	
+		.open = gtp_gesture_open,	
+		.release = gtp_gesture_release,	
+		.read = gtp_gesture_data_read,	
+		.write = gtp_gesture_data_write,	
+		//.unlocked_ioctl = gtp_ioctl,
+#ifdef CONFIG_COMPAT	
+		//.compat_ioctl = gtp_compat_ioctl,
+#endif
+		};
+4. static int gtp_gesture_open(struct inode *node, struct file *flip) {        
+	FTS_DEBUG("gesture node is opened.");        
+	return 0;}
+static int gtp_gesture_release(struct inode *node, struct file *filp) {        
+	FTS_DEBUG("gesture node is closed.");        
+	return 0;}
+5.
+#include <linux/fs.h>
+#include <linux/uaccess.h>
+
+static ssize_t gtp_gesture_data_read(struct file *file, char __user * buff, size_t size, loff_t * ppos){	
+	char buf[150] = {0};
+	int rc = 0;
+	//u8 fwver = 0;
+	//fts_i2c_read_reg(fts_i2c_client, FTS_REG_FW_VER, &fwver) ;
+	snprintf(buf, PAGE_SIZE, "Gesture Mode: %s\n", fts_gesture_data.mode ? "On" : "Off");
+	//snprintf(buf, 150, "IC=FT3518 module=TXD fw_ver= %x \n",1);
+	rc = simple_read_from_buffer(buff, size, ppos, buf, strlen(buf));
+	return rc;
+	}
+static ssize_t gtp_gesture_data_write(struct file *filp, const char __user * buff, size_t len, loff_t * off){	
+     char buf[150] = {0};
+	printk("FTS enter wirte \n");
+	if (copy_from_user( buf, buff, len )){
+	printk("FTS proc wirte copy failed\n");
+	}
+	printk("FTS_yxr buf=%c\n",buf[0]);
+	if (buf[0]=='1') {
+        FTS_DEBUG("[GESTURE]enable gesture");
+        fts_gesture_data.mode = ENABLE;
+    } else if (buf[0]=='0') {
+        FTS_DEBUG("[GESTURE]disable gesture");
+        fts_gesture_data.mode = DISABLE;
+    }
+	return len;
+	}
+
+
+2019.03.25
+OEM-unlock
+在开发者选项里打开OEM-unlock
+进入fastboot，用版本自带的fastboot，权限需sudo
+Sudo ./fastboot flashing unlock
+Sudo ./fastboot flashing unlock_critical
+
+找平台解析的设备树文件：
+cd proc/device-tree
+cat compatible （这是解析的设备树入口的compatible） 可通过grep查出该设备树文件。
+
+2019.03.26
+Input子系统
+三方关系：input_dev、input_handle、input_handler
+如果从Device获取的当前数据与上一个数据相同，我们有必要再上报当前数据吗？如果我们不管两次数据是否一致都上报，那就是A协议；如果我们选择不上报，那么既然需要比较，总需要把上一次数据存起来吧，slot就是做这个事情的，显然这就是Slot(B)协议。
+
+Pinctrl中的active和sleep对应电源状态，一般sleep下做改变是为了降低功耗。
+
+
+2019.03.27
+普通driver调用pin control subsystem的主要目标有两个：
+    （1）设定该设备的功能复用。
+（2）设定该device对应的pin的电气特性。
+
+
+普通的driver调用pin control subsystem 的接口就是只有三个步骤：
+（1）驱动加载或是运行时，获取pin control state holder的句柄
+（2）设定pin control的状态
+（3）驱动卸载或是退出时，释放pin control state holder的句柄
+
+Driver的probe函数可以通过devm_pinctrl_get获得pinctrl的句柄，再自行调用pinctrl_select_state设置pin state。
+pinctrl-0 pinctrl-1 pinctrl-2 .....表示了该设备的一个个状态，这里我们定义了三个pinctrl-0 pinctrl-1 pinctrl-2，数字0、1、2就是pinctrl-names中对应的字符串数组的index。而xxx_state_sleep,xxx_state_default,xxx_state_idel就是驱动具体的pin配置项了，需要在pinctrl设备节点处定义。
+
+2019.03.28
+pin mapping database建立有两种情况：
+一种情况是主控驱动调用pinctrl_register注册machine的struct pinctrl_desc结构到pinctrl子系统时，由pinctrl_register调用pinctrl_get创建。
+另一种就是各驱动在加载时由统一设备驱动模型在driver和device绑定时调用devm_pinctrl_get转而调用pinctrl_get创建。
+
+设备驱动的通用架构：
+1. 一套需要提供给操作系统的标准操作函数。
+2. 一个硬件中断响应函数。
+3. 一个（或一套）由内核提供给底层驱动的回调函数指针，用以存储内核回调函数的地址。
+4. 设备驱动注册和初始化函数。
+
+中断使用在数据量较大的场合；轮询使用在数据量较小的场合。数据量小的场合频繁中断反而降低效率.
+
+volatile 是一个 C 语言规范中定义的修饰符，当一个变量使用该修饰符进行定义时，这就表示 CPU 对该变量的每次访问都从 RAM 中（寄存器实际上也是 RAM）取，而不要使用 CPU 内部的 cache 值，或者简单的说，使用 volatile 修饰符，就是从单个变量的层次上禁止 cache。
+
+ESDcheck：ESD 静电保护机制,每隔 1s 检测一次 ESD 状态, 异常则复位 IC, enable(开启), disable(关闭)ESDcheck:
+
+设备树节点下添加status = "ok";I2C节点下必须添加。
+
+
+
+
+
+
+
+2019.03.29
+mtk平台的内核配置文件 - arch/arm/configs/*_defconfig，配置该文件来进行kernel的剪裁，来适配我们的硬件平台。
+
+
+
+2019.04.02
+CTP自测：ITO测试，时序自测，功耗电流调试
+内联函数是指用inline关键字修饰的函数。在类内定义的函数被默认成内联函数。内联函数从源代码层看，有函数的结构，而在编译后，却不具备函数的性质。内联函数不是在调用时发生控制转移，而是在编译时将函数体嵌入在每一个调用处。编译时，类似宏替换，使用函数体替换调用处的函数名。一般在代码中用inline修饰，但是能否形成内联函数，需要看编译器对该函数定义的具体处理。
+在内联函数中不允许使用循环语句和switch结果，带有异常接口声明的函数也不能声明为内联函数。
+Typora：看.md文件。
+
+2019.04.03
+DRM部分程序添加流程：
+①.h的data结构体中添加：
+/*huaqin modify for bring up by limengxia at 2019/1/22 start*/
+#if defined(CONFIG_DRM)
+    struct notifier_block drm_notif;
+/*huaqin modify for bring up by limengxia at 2019/1/22 end*/
+如果有FB，将FB改为DRM。
+②将FB的回调函数改为DRM回调函数
+static int drm_notifier_callback(struct notifier_block *self,
+                                unsigned long event, void *data)
+{
+    struct msm_drm_notifier *evdata = data;
+    int *blank;
+    struct fts_ts_data *fts_data =
+        container_of(self, struct fts_ts_data, drm_notif);
+
+	if (evdata && evdata->data && event == MSM_DRM_EARLY_EVENT_BLANK) {
+		blank = evdata->data;
+		if (*blank == MSM_DRM_BLANK_POWERDOWN) {
+			fts_ts_suspend(&fts_data->client->dev);
+		}
+	}
+	else if(evdata && evdata->data && event == MSM_DRM_EVENT_BLANK)
+	{
+		blank = evdata->data;
+		if (*blank == MSM_DRM_BLANK_UNBLANK) {
+			kthread_run(drm_fts_ts_resume,&fts_data->client->dev,"tp_resume");
+		}
+	}
+
+    return 0;
+}
+③probe函数中将fb初始化相关改为drm
+#if defined(CONFIG_DRM)
+    ts_data->drm_notif.notifier_call = drm_notifier_callback;
+    ret = msm_drm_register_client(&ts_data->drm_notif);
+/*huaqin modify for bring up by limengxia at 2019/1/22 end*/
+    if (ret) {
+        FTS_ERROR("[DRM]Unable to register drm_notifier: %d", ret);
+    }
+④remove函数中将fb相关改为drm
+/*huaqin modify for bring up by limengxia at 2019/1/22 start*/
+#if defined(CONFIG_DRM)
+    if (msm_drm_unregister_client(&ts_data->drm_notif))
+/*huaqin modify for bring up by limengxia at 2019/1/22 start*/
+        FTS_ERROR("Error occurred while unregistering drm_notifier.");
+⑤添加drm_resume调用resume
+int drm_fts_ts_resume(void *data)
+{
+	fts_ts_resume(data);
+
+	return 0;
+}
+
 
 
 
